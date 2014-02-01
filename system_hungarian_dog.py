@@ -64,10 +64,13 @@ def checkFunctionDecl(node):
 
 def checkFunctionBody(node):
 #	print
-#	dump.var_dump(node)
 	for item in node:
+#		dump.var_dump(item)
 		if not isDecl(item):
 			continue
+		print(item.name)
+		basename = "l_" + getHungarianPrefix(item)
+		print(basename)
 		
 
 # bow-wow
