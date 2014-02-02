@@ -1,20 +1,18 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------
 # system_hungarian_dog.py
 #
-# Using pycparser for finding out irregular names in C files
-# which violates holy coding conventions.
+# Using pycparser for finding out irregular C code which violates
+# holy coding conventions.
 #
 # Copyright (C) 2014, berupon
 # License: BSD
 #-----------------------------------------------------------------
 from __future__ import print_function
 import sys
-
 import dump
-
-builtInTypeNames = "signed unsigned char short int long float double void".split(" ")
 
 # This is not required if you've installed pycparser into
 # your site-packages/ with setup.py
@@ -22,6 +20,17 @@ builtInTypeNames = "signed unsigned char short int long float double void".split
 sys.path.extend(['.', '..'])
 
 from pycparser import c_parser, c_ast, parse_file
+
+builtInTypeNames = "signed unsigned char short int long float double void".split(" ")
+
+def printError(*args, **kwargs):
+	node = args[0]
+	fmt = "ERR %s %s: " + args[1]
+	lst = list(args)
+	lst[0] = node.coord.file
+	lst[1] = node.coord.line
+	args = tuple(lst)
+	print(fmt % args)
 
 def isDecl(node):
 	return isinstance(node, c_ast.Decl)
@@ -54,29 +63,28 @@ def checkIdentifierTypeName(node):
 	names = getIdentifierTypeNames(node)
 	for name in names:
 		if name in builtInTypeNames:
-			print("%s %s built-in type name '%s' is used" % (node.coord.file, node.coord.line, " ".join(names)))
-			return False
-	return True
+			printError(node, "built-in type '%s' is used", " ".join(names))
 
 def checkFunctionArg(node):
 #	node.show()
 #	dump.var_dump(node)
-	if not checkIdentifierTypeName(node):
-		return False
-	print(node.name)
-	basename = "a_" + getHungarianPrefix(node)
-	print(basename)
-	return True
+	checkIdentifierTypeName(node)
+	cow = "a_" + getHungarianPrefix(node)
+	if not node.name.startswith(cow):
+		printError(node, "argument name '%s' does not follow coding convention", node.name)
 	
 def checkFunctionDecl(node):
 #	node.show()
 #	dump.var_dump(node)
-	print(node.type.declname)
-	retType = getHungarianPrefix(node.type)
-	print(retType)
+	declname = node.type.declname
+	cow = getHungarianPrefix(node.type) + "_"
+	if not declname.startswith(cow):
+		printError(node, "function name '%s' does not follow coding convention", declname)
+	if not hasattr(node.args, 'params'):
+		return True
 	for arg in node.args.params:
 		checkFunctionArg(arg)
-
+	
 def checkFunctionBody(node):
 #	print
 	for item in node:
@@ -84,12 +92,11 @@ def checkFunctionBody(node):
 		if not isDecl(item):
 			continue
 		if 'static' in item.storage:
-			print("%s %d 'static' storage class qualifier is used in function" % (item.coord.file, item.coord.line))
-		if not checkIdentifierTypeName(item):
-			continue
-		print(item.name)
-		basename = "l_" + getHungarianPrefix(item)
-		print(basename)
+			printError(item, "storage class qualifier 'static' is used in function")
+		checkIdentifierTypeName(item)
+		cow = "l_" + getHungarianPrefix(item)
+		if not item.name.startswith(cow):
+			printError(item, "local variable name '%s' does not follow coding convention", item.name)
 		
 
 # bow-wow
@@ -112,12 +119,11 @@ class Dog(c_ast.NodeVisitor):
 	def visit_Struct(self, node):
 		for decl in node.decls:
 #			dump.var_dump(decl)
-			if not checkIdentifierTypeName(decl.type):
-				continue
-			print(decl.name)
-			basename = getHungarianPrefix(decl.type)
-			print(basename)
-		
+			checkIdentifierTypeName(decl.type)
+			cow = getHungarianPrefix(decl.type)
+			if not decl.name.startswith(cow):
+				printError(decl, "struct member name '%s' does not follow coding convention", decl.name)
+
 	def visit_Typedef(self, node):
 #		dump.var_dump(node)
 		nd = node.type
@@ -125,7 +131,8 @@ class Dog(c_ast.NodeVisitor):
 			nd = nd.type
 		if isinstance(nd, c_ast.Struct):
 			if not node.name.startswith("st_"):
-				print("%s %s struct typedef name should start with 'st_'" % (node.coord.file, node.coord.line))
+				printError(node, "struct typedef name should start with 'st_'")
+		self.generic_visit(node)
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
@@ -134,6 +141,7 @@ if __name__ == "__main__":
 		print("please specify directory")
 		sys.exit()
 	
-	ast = parse_file(filename, use_cpp=True)
+	ast = parse_file(filename, use_cpp=True,
+			cpp_args=r'-I../pycparser-master/utils/fake_libc_include')
 	Dog().visit(ast)
 

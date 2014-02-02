@@ -1,4 +1,7 @@
+
+#include <math.h>
 #include "common.h"
+//#include "test.h"
 
 si*	g_psi_foo;
 ull	g_ull_bar;
@@ -14,8 +17,6 @@ typedef struct {
 	int i;
 } st_a;
 
-typedef st_a ssss;
-
 fl fl_calc(fl a_fl_arg0, db* a_pdb_arg1, si* a_apsi_arr[])
 {
 	vd* l_pvd_local = g_pvd_piyo;
@@ -27,5 +28,8 @@ fl fl_calc(fl a_fl_arg0, db* a_pdb_arg1, si* a_apsi_arr[])
 	long long a;
 	void* b;
 	st_a l_st_a;
+	
+	float f = sinf(1.0f);
+	
 }
 
