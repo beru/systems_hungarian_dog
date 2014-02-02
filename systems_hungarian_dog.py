@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------
-# system_hungarian_dog.py
+# systems_hungarian_dog.py
 #
 # Using pycparser for finding out irregular C code which violates
 # holy coding conventions.

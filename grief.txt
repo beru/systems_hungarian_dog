@@ -3,3 +3,5 @@ What if you're forced to obey ridiculous coding standards?
 It is free for you to put your middle fingers up in the air
 unless you're not an office worker nor a slave...
 
+http://en.wikipedia.org/wiki/Hungarian_notation#Notable_opinions
+
