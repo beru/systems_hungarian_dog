@@ -51,12 +51,21 @@ def getIdentifierTypeNames(node):
 	return getIdentifierType(node).names
 	
 def getHungarianPrefix(node):
+#	node.show()
+#	dump.var_dump(getIdentifierType(node))
 	basename = ""
 	if isArrayDecl(node.type):
 		basename += "ap" if isPtrDecl(node.type.type) else "a"
 	elif isPtrDecl(node.type):
 		basename += "p"
-	basename += " ".join(getIdentifierTypeNames(node))
+	identifierName = " ".join(getIdentifierTypeNames(node))
+	# strict check ommited...
+	if identifierName.startswith("st_"):
+		identifierName = "st"
+	elif identifierName.startswith("en_"):
+		identifierName = "en"
+	
+	basename += identifierName
 	return basename
 
 def checkIdentifierTypeName(node):
@@ -92,7 +101,7 @@ def checkFunctionBody(node):
 		if not isDecl(item):
 			continue
 		if 'static' in item.storage:
-			printError(item, "storage class qualifier 'static' is used in function")
+			printError(item, "storage class qualifier 'static' inside of a function")
 		checkIdentifierTypeName(item)
 		cow = "l_" + getHungarianPrefix(item)
 		if not item.name.startswith(cow):
@@ -131,8 +140,23 @@ class Dog(c_ast.NodeVisitor):
 			nd = nd.type
 		if isinstance(nd, c_ast.Struct):
 			if not node.name.startswith("st_"):
-				printError(node, "struct typedef name should start with 'st_'")
+				printError(node, "struct typedef name '%s' does not start with 'st_'", node.name)
+		elif isinstance(nd, c_ast.Enum):
+			if not node.name.startswith("en_"):
+				printError(node, "enum typedef name '%s' does not start with 'en_'", node.name)
 		self.generic_visit(node)
+		
+	def visit_Decl(self, node):
+		if isinstance(node.type, c_ast.FuncDecl):
+			self.visit_FuncDecl(node.type)
+		else:
+#			dump.var_dump(node)
+#			node.type.show()
+			checkIdentifierTypeName(node)
+			cow = "g_" + getHungarianPrefix(node)
+#			print(cow)
+			if not node.name.startswith(cow):
+				printError(node.type, "global variable name '%s' does not follow coding convention", node.name)
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
