@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 #-----------------------------------------------------------------
 # system_hungarian_dog.py
 #
@@ -11,6 +13,8 @@ from __future__ import print_function
 import sys
 
 import dump
+
+builtInTypeNames = "signed unsigned char short int long float double void".split(" ")
 
 # This is not required if you've installed pycparser into
 # your site-packages/ with setup.py
@@ -34,8 +38,8 @@ def getIdentifierType(node):
 		nd = nd.type
 	return nd
 	
-def getIdentifierTypeName(node):
-	return getIdentifierType(node).names[0]
+def getIdentifierTypeNames(node):
+	return getIdentifierType(node).names
 	
 def getHungarianPrefix(node):
 	basename = ""
@@ -43,15 +47,26 @@ def getHungarianPrefix(node):
 		basename += "ap" if isPtrDecl(node.type.type) else "a"
 	elif isPtrDecl(node.type):
 		basename += "p"
-	basename += getIdentifierTypeName(node)
+	basename += " ".join(getIdentifierTypeNames(node))
 	return basename
+
+def checkIdentifierTypeName(node):
+	names = getIdentifierTypeNames(node)
+	for name in names:
+		if name in builtInTypeNames:
+			print("%s %s built-in type name '%s' is used" % (node.coord.file, node.coord.line, " ".join(names)))
+			return False
+	return True
 
 def checkFunctionArg(node):
 #	node.show()
 #	dump.var_dump(node)
+	if not checkIdentifierTypeName(node):
+		return False
 	print(node.name)
 	basename = "a_" + getHungarianPrefix(node)
 	print(basename)
+	return True
 	
 def checkFunctionDecl(node):
 #	node.show()
@@ -67,6 +82,10 @@ def checkFunctionBody(node):
 	for item in node:
 #		dump.var_dump(item)
 		if not isDecl(item):
+			continue
+		if 'static' in item.storage:
+			print("%s %d 'static' storage class qualifier is used in function" % (item.coord.file, item.coord.line))
+		if not checkIdentifierTypeName(item):
 			continue
 		print(item.name)
 		basename = "l_" + getHungarianPrefix(item)
@@ -89,6 +108,24 @@ class Dog(c_ast.NodeVisitor):
 		
 	def visit_FuncDecl(self, node):
 		checkFunctionDecl(node)
+		
+	def visit_Struct(self, node):
+		for decl in node.decls:
+#			dump.var_dump(decl)
+			if not checkIdentifierTypeName(decl.type):
+				continue
+			print(decl.name)
+			basename = getHungarianPrefix(decl.type)
+			print(basename)
+		
+	def visit_Typedef(self, node):
+#		dump.var_dump(node)
+		nd = node.type
+		while isinstance(nd, c_ast.TypeDecl):
+			nd = nd.type
+		if isinstance(nd, c_ast.Struct):
+			if not node.name.startswith("st_"):
+				print("%s %s struct typedef name should start with 'st_'" % (node.coord.file, node.coord.line))
 
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
@@ -99,5 +136,4 @@ if __name__ == "__main__":
 	
 	ast = parse_file(filename, use_cpp=True)
 	Dog().visit(ast)
-
 
