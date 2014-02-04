@@ -63,7 +63,30 @@ fl fl_calc(fl a_fl_arg0, db* a_pdb_arg1, si* a_apsi_arr[])
 	db l_db_d;
 	
 	
+	struct hoge {
+		int hoge;
+	};
+	
+	enum fuga {
+		a,
+		b,
+		c,
+	};
+	
 }
+
+struct A
+{
+	int i;
+	int myaa;
+	
+};
+
+typedef enum E
+{
+	a,
+	b,
+}a;
 
 vd vd_test(
 	st_a a_a, st_a st_aa, st_a a_st_a,

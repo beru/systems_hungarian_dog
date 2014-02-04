@@ -102,6 +102,8 @@ def checkFunctionBody(node):
 			continue
 		if 'static' in item.storage:
 			printError(item, "storage class qualifier 'static' inside of a function")
+		if isinstance(item.type, c_ast.Struct) or isinstance(item.type, c_ast.Enum):
+			continue
 		checkIdentifierTypeName(item)
 		cow = "l_" + getHungarianPrefix(item)
 		if not item.name.startswith(cow):
@@ -132,7 +134,10 @@ class Dog(c_ast.NodeVisitor):
 			cow = getHungarianPrefix(decl.type)
 			if not decl.name.startswith(cow):
 				printError(decl, "struct member name '%s' does not follow coding convention", decl.name)
-
+	
+	def visit_Enum(self, node):
+		print(" ")
+	
 	def visit_Typedef(self, node):
 #		dump.var_dump(node)
 		nd = node.type
@@ -149,6 +154,10 @@ class Dog(c_ast.NodeVisitor):
 	def visit_Decl(self, node):
 		if isinstance(node.type, c_ast.FuncDecl):
 			self.visit_FuncDecl(node.type)
+		elif isinstance(node.type, c_ast.Struct):
+			self.visit_Struct(node.type)
+		elif isinstance(node.type, c_ast.Enum):
+			self.visit_Enum(node.type)
 		else:
 #			dump.var_dump(node)
 #			node.type.show()
